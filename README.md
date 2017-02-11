@@ -4,3 +4,7 @@ http://cs-cloud.cs.utsa.edu/
 acc: group8
 pass: in your mail
 server: 129.115.26.160
+
+
+To run the python file: python assign1.py --benchmark tachyon --sched bynode
+There will be a 'result.txt' with the result and 'figure.pdf' that shows a bar chart of ray tracing time comparison of different cluster sizes. 
