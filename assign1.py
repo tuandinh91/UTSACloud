@@ -17,19 +17,19 @@ def tachyon():
 	os.chdir("tachyon/compile/linux-mpi/")
 	#print os.getcwd()
 	
-	os.system("mpirun -np 16 --hostfile ~/mpi_host1 -"+options.sched+" ./tachyon ../../scenes/teapot.dat>result.txt")
+	os.system("mpirun -np 2 --hostfile ~/mpi_host1 -"+options.sched+" ./tachyon ../../scenes/teapot.dat>result.txt")
 	file = open('result.txt','r')
 	rtTime1 = file.read().split('Ray Tracing Time:     ',1)[1].split(' seconds',1)[0]
 	
-	os.system("mpirun -np 16 --hostfile ~/mpi_host2 -"+options.sched+" ./tachyon ../../scenes/teapot.dat>result.txt")
+	os.system("mpirun -np 4 --hostfile ~/mpi_host2 -"+options.sched+" ./tachyon ../../scenes/teapot.dat>result.txt")
 	file = open('result.txt','r')
 	rtTime2 =  file.read().split('Ray Tracing Time:     ',1)[1].split(' seconds',1)[0]
 	
-	os.system("mpirun -np 16 --hostfile ~/mpi_host3 -"+options.sched+" ./tachyon ../../scenes/teapot.dat>result.txt")
+	os.system("mpirun -np 6 --hostfile ~/mpi_host3 -"+options.sched+" ./tachyon ../../scenes/teapot.dat>result.txt")
 	file = open('result.txt','r')
 	rtTime3 =  file.read().split('Ray Tracing Time:     ',1)[1].split(' seconds',1)[0]
 	
-	os.system("mpirun -np 16 --hostfile ~/mpi_hosts -"+options.sched+" ./tachyon ../../scenes/teapot.dat>result.txt")
+	os.system("mpirun -np 8 --hostfile ~/mpi_host4 -"+options.sched+" ./tachyon ../../scenes/teapot.dat>result.txt")
 	file = open('result.txt','r')
 	rtTime4 =  file.read().split('Ray Tracing Time:     ',1)[1].split(' seconds',1)[0]
 	
@@ -59,7 +59,9 @@ def tachyon():
 
 	fig.autofmt_xdate()
 
-	plt.savefig("figure.pdf")
+	plt.savefig("figure-"+options.benchmark+"-"+options.sched+".pdf")
+	
+	print("Output graph is written on ~/tachyon/compile/linux-mpi/figure-"+options.benchmark+"-"+options.sched+".pdf")
 
 def hpcc():
 	print 'hpcc'
