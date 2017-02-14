@@ -1,4 +1,4 @@
-import optparse
+import argparse
 import os
 import numpy as np
 
@@ -10,139 +10,114 @@ from matplotlib import pyplot as plt
 
 def draw_chart(OY,file_name_modifier=""):
 
-	#x-axis data
-	OX = []
-	OX.append(1)
-	OX.append(2)
-	OX.append(3)
-	OX.append(4)
+    #x-axis data
+    OX = []
+    OX.append(1)
+    OX.append(2)
+    OX.append(3)
+    OX.append(4)
 
-	fig = plt.figure()
+    fig = plt.figure()
 
-	width = .35
-	ind = np.arange(len(OY))
-	plt.bar(ind, OY, width=width)
-	plt.xticks(ind + width / 2, OX)
+    width = .35
+    ind = np.arange(len(OY))
+    plt.bar(ind, OY, width=width)
+    plt.xticks(ind + width / 2, OX)
 
-	#saves the chart as a pdf
-	plt.savefig("figure-"+options.benchmark+"-"+file_name_modifier+"-"+options.sched+".pdf")
-	
-	print "Output graph is written on "+os.getcwd()+"/figure-"+options.benchmark+"-"+file_name_modifier+"-"+options.sched+".pdf"
+    #saves the chart as a pdf
+    plt.savefig("figure-"+args.benchmark+"-"+file_name_modifier+"-"+args.sched+".pdf")
+    
+    print "Output graph is written on "+os.getcwd()+"/figure-"+args.benchmark+"-"+file_name_modifier+"-"+args.sched+".pdf"
 
 def tachyon():
-	print 'tachyon'
-	print options.sched
+    print 'tachyon'
+    print args.sched
 
-	#changing directory to run tachyon
-	os.chdir("tachyon/compile/linux-mpi/")
-	
-	#running tachyon for 2 process in 1 host
-	os.system("mpirun -np 2 --hostfile ~/mpi_host1 -"+options.sched+" ./tachyon ../../scenes/teapot.dat>result.txt")
-	file = open('result.txt','r')
-	rtTime1 = file.read().split('Ray Tracing Time:     ',1)[1].split(' seconds',1)[0]
-	
-	#running tachyon for 4 process in 2 hosts
-	os.system("mpirun -np 4 --hostfile ~/mpi_host2 -"+options.sched+" ./tachyon ../../scenes/teapot.dat>result.txt")
-	file = open('result.txt','r')
-	rtTime2 =  file.read().split('Ray Tracing Time:     ',1)[1].split(' seconds',1)[0]
-	
-	#running tachyon for 6 process in 3 hosts
-	os.system("mpirun -np 6 --hostfile ~/mpi_host3 -"+options.sched+" ./tachyon ../../scenes/teapot.dat>result.txt")
-	file = open('result.txt','r')
-	rtTime3 =  file.read().split('Ray Tracing Time:     ',1)[1].split(' seconds',1)[0]
-	
-	#running tachyon for 8 process in 4 hosts
-	os.system("mpirun -np 8 --hostfile ~/mpi_host4 -"+options.sched+" ./tachyon ../../scenes/teapot.dat>result.txt")
-	file = open('result.txt','r')
-	rtTime4 =  file.read().split('Ray Tracing Time:     ',1)[1].split(' seconds',1)[0]
-	
-	print "Time required for ray tracing"
-	print "################################"
-	print "1 cluster: "+rtTime1
-	print "2 cluster: "+rtTime2
-	print "3 cluster: "+rtTime3
-	print "4 cluster: "+rtTime4
-	
-	#Y-axis data for the graph
-	OY = []
-	OY.append(float(rtTime1))
-	OY.append(float(rtTime2))
-	OY.append(float(rtTime3))
-	OY.append(float(rtTime4))
-	
-	draw_chart(OY)
+    #changing directory to run tachyon
+    os.chdir("tachyon/compile/linux-mpi/")
+    
+    #Y-axis data for the graph
+    OY = []
+    for cluster in range(1,5):    
+        os.system("mpirun -np "+str(cluster*2)+" --hostfile ~/mpi_host"+str(cluster)+" -"+args.sched+" ./tachyon ../../scenes/teapot.dat>result.txt")
+        
+        print "\nCluster "+str(cluster)+": "
+        file = open('result.txt','r')
+        rtTime = file.read().split('Ray Tracing Time:     ',1)[1].split(' seconds',1)[0]
+        print "Time required for ray tracing: "+rtTime
+        OY.append(float(rtTime))
+   
+    draw_chart(OY)
 
-#deletes the output file before running hpcc	
+#deletes the output file before running hpcc    
 def delete_output_file():
-	if os.path.exists("hpccoutf.txt"):
-		os.remove("hpccoutf.txt")
-		#print "previous output file deleted"
+    if os.path.exists("hpccoutf.txt"):
+        os.remove("hpccoutf.txt")
+        #print "previous output file deleted"
 
+def change_input_parameter(P,Q,NB,N):
+    with open('hpccinf.txt','r') as infile:
+        content = infile.read().split('\n')
+    
+    content[10] = str(P)+'            Ps' 
+    content[11] = str(Q)+'            Qs' 
+    content[7] = str(NB)+'          NBs' 
+    content[5] = str(N)+'        Ns' 
+
+    with open('hpccinf.txt','w') as infile:
+        for item in content:
+            infile.write("%s\n" % item)
+
+
+def calculate_ptrans():
+    with open('hpccoutf.txt','r') as infile:
+        content = infile.read().split('\n')
+        for item in content:
+            if item.startswith('WR11C2R4'):
+                return float(item.split()[-1])
+                    
 def hpcc():
-	print 'hpcc'
-	print options.sched
-	os.chdir("hpcc-1.4.3/")
-	
-	delete_output_file()
-	# TODO #read the input file and change the inputs. How to modify a file : http://stackoverflow.com/questions/13808252/i-need-to-open-and-rewrite-a-line-in-a-file-in-python
-	os.system("mpirun -np 2 --hostfile ~/mpi_host1 -"+options.sched+" ./hpcc")
-	file = open('hpccoutf.txt','r')
-	PTRANS_GBs1 =  file.read().split('PTRANS_GBs=',1)[1].split('PTRANS_time',1)[0]
-	
-	delete_output_file()
-	# TODO #read the input file and change the inputs.
-	os.system("mpirun -np 4 --hostfile ~/mpi_host2 -"+options.sched+" ./hpcc")
-	file = open('hpccoutf.txt','r')
-	PTRANS_GBs2 =  file.read().split('PTRANS_GBs=',1)[1].split('PTRANS_time',1)[0]
-	
-	delete_output_file()
-	# TODO #read the input file and change the inputs.
-	os.system("mpirun -np 6 --hostfile ~/mpi_host3 -"+options.sched+" ./hpcc")
-	file = open('hpccoutf.txt','r')
-	PTRANS_GBs3 =  file.read().split('PTRANS_GBs=',1)[1].split('PTRANS_time',1)[0]
-	
-	delete_output_file()
-	# TODO #read the input file and change the inputs.
-	os.system("mpirun -np 8 --hostfile ~/mpi_host4 -"+options.sched+" ./hpcc")
-	file = open('hpccoutf.txt','r')
-	PTRANS_GBs4 =  file.read().split('PTRANS_GBs=',1)[1].split('PTRANS_time',1)[0]
-
-	
-	print "GBs for PTRANS"
-	print "################################"
-	print "1 cluster: "+PTRANS_GBs1
-	print "2 cluster: "+PTRANS_GBs2
-	print "3 cluster: "+PTRANS_GBs3
-	print "4 cluster: "+PTRANS_GBs4
-	
-	OY = []
-	OY.append(float(PTRANS_GBs1))
-	OY.append(float(PTRANS_GBs2))
-	OY.append(float(PTRANS_GBs3))
-	OY.append(float(PTRANS_GBs4))
-	
-	draw_chart(OY,"PTRANS")
-	
-
+    print 'hpcc'
+    print args.sched
+    os.chdir("hpcc-1.4.3/")
+    OYPTRANS = []
+    OYHPL = []
+    for cluster in range(1,5):    
+        delete_output_file()
+        change_input_parameter(1,cluster,50,200)
+    
+        os.system("mpirun -np "+str(cluster*2)+" --hostfile ~/mpi_host"+str(cluster)+" -"+args.sched+" ./hpcc")
+        
+        print "\nCluster "+str(cluster)+": "
+        file = open('hpccoutf.txt','r')
+        PTRANS_GBs =  file.read().split('PTRANS_GBs=',1)[1].split('\nPTRANS_time',1)[0]
+        HPL_Gflops=calculate_ptrans()
+        print 'PTRANS_GBs: '+str(PTRANS_GBs)
+        print 'HPL_Gflops: '+str(HPL_Gflops)
+        OYPTRANS.append(float(PTRANS_GBs))  
+        OYHPL.append(float(HPL_Gflops))   
+    draw_chart(OYPTRANS,"PTRANS")
+    draw_chart(OYPTRANS,"HPL")
 
 #program starts here
-	
-parser = optparse.OptionParser()
+    
+parser = argparse.ArgumentParser()
 
-parser.add_option('--benchmark',
-    action="store", dest="benchmark",
-    help="benchmark string", default="tachyon")
-	
-parser.add_option('--sched',
-    action="store", dest="sched",
-    help="scheduling policy", default="byslot")
+parser.add_argument('-benchmark')
 
-options, args = parser.parse_args()
+parser.add_argument('-sched')
 
-if options.benchmark == 'tachyon':
-	tachyon()
-elif options.benchmark == 'hpcc':
-	hpcc()
+args = parser.parse_args()
+
+
+if args.sched != 'byslot' and args.sched != 'bynode':
+    print args.sched
+    print 'Scheduling policy is invalid. Should be byslot or bynode'
+    quit();
+if args.benchmark == 'tachyon':
+    tachyon()
+elif args.benchmark == 'hpcc':
+    hpcc()
 else:
-	print 'Benchmark not supported'
+    print 'Benchmark not supported'
 
