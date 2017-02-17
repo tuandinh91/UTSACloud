@@ -73,25 +73,25 @@ def change_input_parameter(P,Q,NB,N):
             infile.write("%s\n" % item)
 
 
-def calculate_ptrans():
+def calculate_hpl():
     with open('hpccoutf.txt','r') as infile:
         content = infile.read().split('\n')
         for item in content:
             if item.startswith('WR11C2R4'):
                 return float(item.split()[-1])
                 
-def process_cluster(cluster, nb, n):
+def process_cluster(cluster, nb, n, scale):
     global OYPTRANS
     global OYHPL
     delete_output_file()
-    change_input_parameter(1,cluster,nb,n)
+    change_input_parameter(1,cluster,nb,n/scale)
 
     os.system("mpirun -np "+str(cluster*2)+" --hostfile ~/mpi_host"+str(cluster)+" -"+args.sched+" ./hpcc")
     
     print "\nCluster "+str(cluster)+": "
     file = open('hpccoutf.txt','r')
     PTRANS_GBs =  file.read().split('PTRANS_GBs=',1)[1].split('\nPTRANS_time',1)[0]
-    HPL_Gflops=calculate_ptrans()
+    HPL_Gflops=calculate_hpl()
     print 'PTRANS_GBs: '+str(PTRANS_GBs)
     print 'HPL_Gflops: '+str(HPL_Gflops)
     OYPTRANS.append(float(PTRANS_GBs))  
@@ -103,10 +103,12 @@ def hpcc():
     print 'hpcc'
     print args.sched
     os.chdir("hpcc-1.4.3/")
-    process_cluster(1, 224, 4853); 
-    process_cluster(2, 224, 6944); 
-    process_cluster(3, 224, 8512); 
-    process_cluster(4, 224, 9760); 
+    #scale down the data to speedup testing
+    scale = 5
+    process_cluster(1, 224, 14560, scale); 
+    process_cluster(2, 224, 20832, scale); 
+    process_cluster(3, 224, 25536, scale); 
+    process_cluster(4, 224, 29280, scale); 
     draw_chart(OYPTRANS,"PTRANS")
     draw_chart(OYPTRANS,"HPL")
 
