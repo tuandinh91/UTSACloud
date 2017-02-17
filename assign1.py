@@ -104,7 +104,7 @@ def hpcc():
     print args.sched
     os.chdir("hpcc-1.4.3/")
     #scale down the data to speedup testing
-    scale = 5
+    scale = 3
     process_cluster(1, 224, 14560, scale); 
     process_cluster(2, 224, 20832, scale); 
     process_cluster(3, 224, 25536, scale); 
