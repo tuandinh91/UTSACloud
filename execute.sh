@@ -10,3 +10,4 @@ bin/hadoop jar contrib/streaming/hadoop-streaming-1.2.1.jar \
 #copy output to local
 rm -rf ~/out-1
 bin/hadoop fs -copyToLocal /hw2-output ~/out-1
+echo "Output is written on ~/out-1/part-00000"
