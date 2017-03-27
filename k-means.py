@@ -31,9 +31,6 @@ if __name__ == "__main__":
         print("Usage: kmeans <file> <k> <convergeDist>", file=sys.stderr)
         exit(-1)
 
-    print("""WARN: This is a naive implementation of KMeans Clustering and is given
-       as an example! Please refer to examples/src/main/python/mllib/kmeans.py for an example on
-       how to use MLlib's KMeans implementation.""", file=sys.stderr)
 
     sc = SparkContext(appName="PythonKMeans")
     lines = sc.textFile((sys.argv[1]),3)
