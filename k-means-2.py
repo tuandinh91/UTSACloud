@@ -8,11 +8,10 @@ from pyspark import SparkContext
 #this function reports the GPS of thefts and burglaries
 def parseVector(line):
     parts = line.split(',')
-    if "THEFT" in parts[1]: 
-        return parts[5],(1.0,0.0)
-    if "BURGLARY" in parts[1]:
-        return parts[5],(0.0,1.0)
-    return "NODATA",(0.0,0.0)
+    if len(parts[6])>2 and len(parts[7])>2 and parts[6]!="LONGITUDE":
+        if ("THEFT" in parts[1]) or ("BURGLARY" in parts[1]): 
+            return "DATA",(float(parts[6]),float(parts[7]))
+    return "NODATA",[0,0]
 
 #finds the closest centroid
 def closestPoint(p, centers):
@@ -35,11 +34,7 @@ if __name__ == "__main__":
     sc = SparkContext(appName="PythonKMeans")
     lines = sc.textFile((sys.argv[1]),3)
     #filter out data not related to theft or burglaries
-    data = lines.map(parseVector).filter(lambda x : "NODATA" not in x[0])
-    data = data.reduceByKey(lambda p1_c1, p2_c2:(p1_c1[0]+p2_c2[0],p1_c1[1]+p2_c2[1])).cache()
-    data = data.map(lambda s: s[1]).cache()
-    for x in data.take(20):
-        print (x)
+    data = lines.map(parseVector).filter(lambda x : "NODATA" not in x[0]).map(lambda s: s[1]).cache()
     
     K = int(sys.argv[2])
     
