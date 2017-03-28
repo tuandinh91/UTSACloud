@@ -25,6 +25,9 @@ def closestPoint(p, centers):
             bestIndex = i
     return bestIndex
 
+#save create CSVLine
+def toCSVLine(data):
+  return ','.join(str(d) for d in data)
 
 if __name__ == "__main__":
 
@@ -37,19 +40,20 @@ if __name__ == "__main__":
     #filter out data not related to theft or burglaries
     data = lines.map(parseVector).filter(lambda x : "NODATA" not in x[0])
     data = data.reduceByKey(lambda p1_c1, p2_c2:(p1_c1[0]+p2_c2[0],p1_c1[1]+p2_c2[1])).cache()
-    data_values = data.map(lambda s: s[1]).cache()
-        
+   
+    dataValue = data.map(lambda s: s[1]).cache()
+    
     K = int(sys.argv[2])
     
     convergeDist = float(sys.argv[3])
 
     #initialization k points 
-    kPoints = data_values.takeSample(False, K, 1)
+    kPoints = dataValue.takeSample(False, K, 1)
     tempDist = 1.0
 
     while tempDist > convergeDist:
         #assigning to nearest centroid and keeping count
-        closest = data_values.map(
+        closest = dataValue.map(
             lambda p: (closestPoint(p, kPoints), (p, 1)))
             
         #adding all values under same cluster
@@ -62,13 +66,17 @@ if __name__ == "__main__":
           
         #new distance to test for convergence          
         tempDist = sum(((kPoints[iK][0] - p[0]) ** 2+(kPoints[iK][1] - p[1]) ** 2) for (iK, p) in newPoints)
-        print ("tempdist",tempDist)
         
         #assigning new points
         for (iK, p) in newPoints:
             kPoints[iK] = p
-
-    print("Final centers: " + str(kPoints))
+    clusters = data.map(lambda s: (closestPoint(s[1],kPoints),str(s[0])));
+    
+    f = open('hw3-output.txt', 'w')
+    f.truncate()
+    f.write('********OUTPUT********\n')
+    f.write('Final centers: ' + str(kPoints))
+    f.close()
     sc.stop()
 
     
