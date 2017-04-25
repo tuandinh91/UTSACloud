@@ -11,4 +11,4 @@ login
 su - hduser
 pass: cloud9
 
-Run ./k-means.sh from ~ directory
+Run 
