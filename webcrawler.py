@@ -16,7 +16,11 @@ def getPrice(price):
 count = 0
 limit_reached = False
 sc = SparkContext(appName="AskMeMP")
+
 amazon_rdd = sc.parallelize(['ID+TITLE+AUTHOR+URL+PRICE'])
+walmart_rdd = sc.parallelize(['ID+TITLE+AUTHOR+URL+PRICE'])
+ebay_rdd = sc.parallelize(['ID+TITLE+AUTHOR+URL+PRICE'])
+
 result = api.browse_node_lookup(1000)
 for child1 in result.BrowseNodes.BrowseNode.Children.BrowseNode:
     if limit_reached: 
@@ -28,18 +32,25 @@ for child1 in result.BrowseNodes.BrowseNode.Children.BrowseNode:
         for book in api.item_search('Books',BrowseNode=child.BrowseNodeId):
             try:
                 detail = api.item_lookup(str(book.ASIN),ResponseGroup='OfferSummary').Items[0]
-                temp_rdd = sc.parallelize([str(book.ASIN)+'+'+book.ItemAttributes.Title+'+'+book.ItemAttributes.Author+'+'+book.DetailPageURL+'+'+str(detail.Item.OfferSummary.LowestNewPrice.Amount)])
+                temp_rdd = sc.parallelize([str(book.ASIN)+'+'+book.ItemAttributes.Title+'+'+book.ItemAttributes.Author
+                +'+'+book.DetailPageURL+'+'+str(detail.Item.OfferSummary.LowestNewPrice.Amount)])
                 amazon_rdd = amazon_rdd.union(temp_rdd)
                 #print '%s,%s,%s,%s,%s' % (book.ASIN,book.ItemAttributes.Title,book.ItemAttributes.Author,book.DetailPageURL,detail.Item.OfferSummary.LowestNewPrice.Amount)
                 amazon_price = int(detail.Item.OfferSummary.LowestNewPrice.Amount)
-                amazon = str(book.DetailPageURL)
+                amazon_url = str(book.DetailPageURL)
                 
-                walmart = amazon.replace("amazon", "walmart")
+                walmart_url = amazon_url.replace("amazon", "walmart")
                 walmart_price = getPrice(amazon_price)               
+                temp_rdd = sc.parallelize([str(book.ASIN)+'+'+book.ItemAttributes.Title+'+'+book.ItemAttributes.Author
+                +'+'+walmart_url+'+'+str(walmart_price)])                        
+                walmart_rdd = walmart_rdd.union(temp_rdd)
                 #print '%s,%s,%s,%s,%s' % (book.ASIN,book.ItemAttributes.Title,book.ItemAttributes.Author,walmart,walmart_price)
                             
-                ebay = walmart.replace("walmart", "ebay")
+                ebay_url = walmart_url.replace("walmart", "ebay")
                 ebay_price = getPrice(amazon_price)
+                temp_rdd = sc.parallelize([str(book.ASIN)+'+'+book.ItemAttributes.Title+'+'+book.ItemAttributes.Author
+                +'+'+ebay_url+'+'+str(ebay_price)])
+                ebay_rdd = ebay_rdd.union(temp_rdd)
                 #print '%s,%s,%s,%s,%s' % (book.ASIN,book.ItemAttributes.Title,book.ItemAttributes.Author,ebay,ebay_price)
                 
                 count+=1
@@ -50,8 +61,11 @@ for child1 in result.BrowseNodes.BrowseNode.Children.BrowseNode:
                 print e 
 #n = amazon_rdd.map(toCSVLine)
 amazon_rdd.saveAsTextFile('hdfs://192.168.0.33:54310/final/amazon.txt')
-new = sc.textFile('hdfs://192.168.0.33:54310/final/amazon.txt')
-for x in new.take(9):
+walmart_rdd.saveAsTextFile('hdfs://192.168.0.33:54310/final/walmart.txt')
+ebay_rdd.saveAsTextFile('hdfs://192.168.0.33:54310/final/ebay.txt')
+
+test = sc.textFile('hdfs://192.168.0.33:54310/final/ebay.txt')
+for x in test.take(9):
     print x
 sc.stop()
 
