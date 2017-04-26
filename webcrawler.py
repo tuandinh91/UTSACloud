@@ -16,7 +16,7 @@ def getPrice(price):
 count = 0
 limit_reached = False
 sc = SparkContext(appName="AskMeMP")
-amazon_rdd = sc.parallelize(['ID','TITLE','AUTHOR','URL','PRICE'])
+amazon_rdd = sc.parallelize(['ID+TITLE+AUTHOR+URL+PRICE'])
 result = api.browse_node_lookup(1000)
 for child1 in result.BrowseNodes.BrowseNode.Children.BrowseNode:
     if limit_reached: 
@@ -28,7 +28,7 @@ for child1 in result.BrowseNodes.BrowseNode.Children.BrowseNode:
         for book in api.item_search('Books',BrowseNode=child.BrowseNodeId):
             try:
                 detail = api.item_lookup(str(book.ASIN),ResponseGroup='OfferSummary').Items[0]
-                temp_rdd = sc.parallelize([book.ASIN,book.ItemAttributes.Title,book.ItemAttributes.Author,book.DetailPageURL,detail.Item.OfferSummary.LowestNewPrice.Amount])
+                temp_rdd = sc.parallelize([str(book.ASIN)+'+'+book.ItemAttributes.Title+'+'+book.ItemAttributes.Author+'+'+book.DetailPageURL+'+'+str(detail.Item.OfferSummary.LowestNewPrice.Amount)])
                 amazon_rdd = amazon_rdd.union(temp_rdd)
                 #print '%s,%s,%s,%s,%s' % (book.ASIN,book.ItemAttributes.Title,book.ItemAttributes.Author,book.DetailPageURL,detail.Item.OfferSummary.LowestNewPrice.Amount)
                 amazon_price = int(detail.Item.OfferSummary.LowestNewPrice.Amount)
@@ -51,7 +51,7 @@ for child1 in result.BrowseNodes.BrowseNode.Children.BrowseNode:
 #n = amazon_rdd.map(toCSVLine)
 amazon_rdd.saveAsTextFile('hdfs://192.168.0.33:54310/final/amazon.txt')
 new = sc.textFile('hdfs://192.168.0.33:54310/final/amazon.txt')
-for x in new.collect():
+for x in new.take(9):
     print x
 sc.stop()
 
