@@ -54,12 +54,11 @@ for child1 in result.BrowseNodes.BrowseNode.Children.BrowseNode:
                 #print '%s,%s,%s,%s,%s' % (book.ASIN,book.ItemAttributes.Title,book.ItemAttributes.Author,ebay,ebay_price)
                 
                 count+=1
-                if count>=15:
+                if count >= 15:
                     limit_reached = True
-                    break
-            except AttributeError, e:
+            except:
                 continue
-#n = amazon_rdd.map(toCSVLine)
+                    
 amazon_rdd.saveAsTextFile('hdfs://192.168.0.33:54310/final/amazon.txt')
 walmart_rdd.saveAsTextFile('hdfs://192.168.0.33:54310/final/walmart.txt')
 ebay_rdd.saveAsTextFile('hdfs://192.168.0.33:54310/final/ebay.txt')
