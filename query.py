@@ -37,7 +37,7 @@ ebay_data = ebay_rdd.filter(lambda x : query in x)
 ebay_data = ebay_data.map(parseVector).cache()
 ebay_data = ebay_data.reduceByKey(lambda a,b:a).cache()
 ebay_result = ebay_data.collect()
-
+end = time.time()
 for x in range(0,len(amazon_result)):
     upc, (title, author, price, url) = amazon_result[x]
     print '+++' + str(upc)
@@ -61,7 +61,7 @@ amazon_data = amazon_data.reduceByKey(lambda a,b:a).cache()
 
 '''
 sc.stop()
-end = time.time()
+
 print 'Load time: %.5f seconds' % (start - pre)
 print 'Search time: %.5f seconds' % (end - start)
  
